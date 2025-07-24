@@ -1,0 +1,13 @@
+{% extends "experiments/base.html" %}
+
+{% block content %}
+<h3>Select an Experiment</h3>
+<div class="list-group">
+    {% for slug, exp in experiments.items %}
+      <a href="{% url 'run_experiment' slug=slug %}" class="list-group-item list-group-item-action">
+
+            {{ exp.title }}
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

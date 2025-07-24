@@ -1,0 +1,120 @@
+{% extends "experiments/base.html" %}
+{% load custom_filters %}
+
+{% block content %}
+<h3>{{ experiment.title }}</h3>
+
+
+<div class="mb-3">
+    <strong>Aim:</strong>
+    <p>{{ experiment.aim }}</p>
+</div>
+
+
+<div class="mb-3">
+    <strong>Procedure:</strong>
+    <ol>
+        {% for step in experiment.procedure %}
+            <li>{{ step }}</li>
+        {% endfor %}
+    </ol>
+</div>
+
+
+<form method="POST">
+    {% csrf_token %}
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Sieve No.</th>
+                <th>Weight Retained (g)</th>
+            </tr>
+        </thead>
+        <tbody>
+          {% for i in "123456" %}
+<tr>
+    <td>{{ experiment.factors|index:forloop.counter0 }}</td>
+    <td>
+        <input type="number" name="w{{ i }}" step="0.01" class="form-control"
+               value="{{ weight_inputs|index:forloop.counter0 }}">
+    </td>
+</tr>
+{% endfor %}
+
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Calculate GFN</button>
+</form>
+
+
+
+{% if result %}
+    
+    <div class="alert alert-success mt-4">
+        <strong>Grain Fineness Number (GFN):</strong> {{ result }}
+    </div>
+
+    <div class="bg-light p-3 rounded">
+        {{ steps|safe }}
+    </div>
+
+    
+    <div class="mt-4">
+        <h5>Graph: Retained vs Sieve Number</h5>
+        <canvas id="retainedChart" width="400" height="200"></canvas>
+    </div>
+<a href="{% url 'experiment_list' %}" class="btn btn-secondary mt-3">← Back to List</a>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('retainedChart').getContext('2d');
+        const retainedChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ graph_data.sieves|safe }},
+                datasets: [{
+                    label: '% Retained',
+                    data: {{ graph_data.percentages|safe }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(21, 11, 199, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Grain Size Distribution' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '% Retained' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Sieve Number' }
+                    }
+                }
+            }
+        });
+    </script>
+{% endif %}
+<hr class="my-4">
+<h5>Send Result to Student Email</h5>
+<form method="POST" action="">
+    {% csrf_token %}
+    
+    {% for i in 1|to:7 %}
+        <input type="hidden" name="w{{ i }}" value="{{ weight_inputs|index:forloop.counter0 }}">
+    {% endfor %}
+    <input type="hidden" name="from_result" value="true">
+
+    <div class="mb-3 mt-3">
+        <label for="email" class="form-label">Student Email</label>
+        <input type="email" name="email" id="email" class="form-control"
+               placeholder="student@example.com"
+               value="{{ email|default:'' }}" required>
+    </div>
+    <button type="submit" class="btn btn-success">📧 Send Result to Email</button>
+</form>
+
+{% endblock %}
